@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+
+    <link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <style>
+        *{margin: 0;padding: 0}
+
+
+        div{
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+        #createC{
+            width: 230px;
+            margin: 10px;
+        }
+
+        button, p{
+            margin: 10px 0 10px 10px;
+        }
+
+        label{
+            display: inline-block;
+            width: 50px;
+            text-align: left;
+        }
+
+        #canvas{
+            position: absolute;
+            left: 250px;
+            right: 250px;
+            top: 10px;
+            bottom: 10px;
+        }
+        #points{
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 230px;
+            height: 170px;
+        }
+        #code{
+            position: absolute;
+            top:  410px;
+            right: 10px;
+            width: 230px;
+            height: 170px;
+        }
+
+        #input{
+            position: absolute;
+            top: 210px;
+            right: 10px;
+            width: 230px;
+            height: 170px;
+        }
+
+        #edit_animate_button{
+            position: absolute;
+            bottom: 10px;
+            right: 155px;
+        }
+        #edit_animate_div{
+            position: absolute;
+            left: 250px;
+            right: 250px;
+            height: 180px;
+            bottom: 10px;
+            z-index: 100;
+            opacity: 0.6;
+            display: none;
+        }
+        h2{
+            width: 240px;
+            height: 100px;
+            position: absolute;
+            left: calc(50% - 100px);
+            bottom: 0;
+        }
+        a{
+            text-decoration: none;
+        }
+        a:hover{
+            text-decoration: underline;
+        }
+
+        input.inline{
+            display: inline-block;
+            vertical-align: middle;
+            width: 160px;
+        }
+        input.color{
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        #help-doc{
+            left: 60%;
+            top:0;
+            width: 40%;
+            display: none;
+            background: #ffffff;
+            z-index: 9999;
+            position: absolute;
+        }
+
+        #help-doc div{
+            box-shadow: none;
+            border-radius: 0;
+        }
+        #help-doc p button{
+            margin: 0;
+        }
+
+        svg g text{
+            font-size:10px;
+        }
+    </style>
+    <script src="js/tween.js"></script>
+    <script src="js/path.js"></script>
+    <script src="js/commands.js"></script>
+    <script src="js/vector.js"></script>
+</head>
+<body>
+<div id="help-doc" class="container">
+
+    <div class="row  ">
+        <div class=" bg-info">1:创建</div>
+        <div  class=' col-md-12'>
+            点击不同的按钮创建不同的图形
+        </div>
+    </div>
+
+    <div class="row  ">
+        <div class=" bg-info">2：属性操作</div>
+        <div class="col-md-12  ">
+            当创建完图形后就可以属性操作了，操作不同SVG图形的SVG。默认只提供了width,和height属性当然您可以点击右上角的add
+            按钮添加编辑该图形的其它控见
+            比如说可以给circle添加cx,cy,r控件，给椭圆添加rx,ry控件
+        </div>
+    </div>
+
+
+    <div class="row  ">
+        <div class=" bg-info">3：形状</div>
+        <div class="col-md-12  ">
+            这是一系列编辑图形transform属性的组件
+            tx,ty是translate x translate y 偏移属性
+            sx,sy是scale x ,scale y  放大属性
+            r是旋转的属性,kx,ky是skew skewy压缩属性
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="bg-info">4：外观</div>
+        <div class="col-md-12 ">
+            这是编辑图形的边框颜色的填充颜色，和边框大小的一套组建<br>
+            点击了delete按钮就删除了当前选中的图形
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="bg-info">5：输入点</div>
+        <div class="col-md-12 ">
+            可以随便在画板上点击几下，出来几个点p0,p1,p2这三个点在输入框显示是p0:50,50这样的格式可以直接编辑改变p0的位置，也可以在画板上拖动这些点改变位置
+            这些点是绘制复杂图形的关键,可以通过在输入框里删除点点数据来删除在画板上的点点，从后往前删哦，亲
+        </div>
+    </div>
+    <div class="row">
+        <div class="bg-info">6：d语句</div>
+        <div class="col-md-12 ">
+            根据画板上不同的输入点， 在d语句输入框里编辑不同的语句来绘制复杂图形<br>
+            1:直线命令m p0 l p1 l p2 这是绘制了从p0 连接 p1 到p2 的命令<br>
+            2:曲线命令m p0 q p1 p2 这是绘制了以p0 p1 p2为控制点的二次贝塞尔曲线的<br>
+            3:曲线命令2 m p0 p1 c p2 p3这是绘制了p0 p1 p2 p3控制点的三次贝塞尔曲线<br>
+            4:圆弧命令m p0 a 50 50 0 0 1 p1这是绘制了从p0 到p1的半径为50 50 的圆弧中间的三个参数可以测试他是干啥的哟<br>
+            5:自定义指令，我也提供了一些方便快速绘制图形的自定义指令:<br>
+            1 line p0 p1 p2 表示用线来连接三个点<br>
+            2 semi p0 p1 从p0 到p1画一条半圆弧 可以semi2 p0 p1表示长轴是短轴两倍<br>
+            3 arc30 p0 p1 表示画一条从p0 到 p1 30度的圆弧<br>
+            4 rect p0 p1 p2表示画一个由p0 p1 p2三个点为控制点的平行四边形,<br>
+            总结:点点可以不断拖动来改变形状达到你满意的效果
+        </div>
+    </div>
+    <div class="row">
+        <div class="bg-info">7：输出svg代码</div>
+        <div class="col-md-12 ">
+            绘制的图形的SVG代码全在这个输入框里可以复制粘贴到自己的页面里去
+        </div>
+    </div>
+    <div class="row">
+        <div class="bg-info">8：编辑动画</div>
+        <div class="col-md-12 ">
+            在d语句输入框里输入的指令会绘制成不同的path,path0代码第一个path,path1代表第二个，以此类推然后写动画的语句<br>
+            1:path0.animate({p0:p4,p2:p5}）表示path0的用默认的运动时间和默认的运动样式p0运动到p4,p2运动到p5<br>
+            2:path0.animate({p0:p4,p2:p5},2000,'elasticBoth'）表示运动时间2000ms,运动样式弹性运动<br>
+            3:path0.animate({p0:p4,p2:p5},2000,'elasticBoth').then(path1).animate({p5:p6})表示path0运动完后path1紧接着运动<br>
+            4:path0.animate({p0:p4,p2:p5},2000,'elasticBoth').then(1000).then(path1).animate({p5:p6})我想你已经知道这是什么意思了
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="bg-info">9：输出js代码</div>
+        <div class="col-md-12 ">
+            请先导入我写的运动插件<br>
+
+        </div>
+    </div>
+    <p>
+
+        <button class="btn btn-default" id="float_left">浮动到左侧</button>
+        <button class="btn btn-default" id="float_right">浮动到右侧</button>
+        <button class="btn btn-default" id="float_close">关闭</button></p>
+</div>
+<div id="createC">
+    <p >创建:<input type="button" class="color btn btn-info" value="help" style="width: 60px;margin-left:  123px" id="help" ></p>
+    <form id="create-shape" >
+        <button type="button" create="rect" class="btn btn-default " >Rect</button>
+        <button type="button" create="circle" class="btn btn-default ">Circle</button>
+        <button type="button" create="ellipse" class="btn btn-default ">Ellipse</button>
+        <button type="button" create="line" class="btn btn-default ">Line</button>
+    </form>
+    <form id="add-attrs">
+        <p class="text-info">属性操作<input type="button" class="color  btn btn-info" value="add" style="width: 60px;margin-left: 95px" id="add" ></p>
+
+        <p>
+            <input type="text" placeholder="key" class="color form-control " style="width: 60px" value="width" >->
+            <input type="number" class="color form-control" style="width: 90px">
+            <input type="button" class="color btn btn-warning" value="del" style="width: 40px; " id="width">
+        </p>
+        <p>
+            <input type="text" placeholder="key" class="color form-control " style="width: 60px" value="height">->
+            <input type="number" class="color form-control" style="width: 90px">
+            <input type="button" class="color btn btn-warning" value="del" style="width: 40px; "  id="height">
+        </p>
+    </form>
+
+    <p >形状:</p>
+    <form id="shape-attrs" style="margin: 20px 0">
+        <p>
+            TX:<input id="tx" type="range" value=0 class="color form-control" style="width: 80px" min="0" max="600"/>
+            TY:<input id="ty" type="range" value=0 class="color form-control" style="width: 80px" min="0" max="600"/>
+        </p>
+        <p>
+            SX:<input id="sx" type="range" value=1 class="color form-control" style="width: 80px" min="0.1" max="5" step="0.1"/>
+            SY:<input id="sy" type="range" value=1 class="color form-control" style="width: 80px"  min="0.1" max="5" step="0.1"/>
+        </p>
+        <p>
+            RX:<input id="rx" type="range" value=0 class="color form-control" style="width: 185px" min="0" max="360"/>
+        </p>
+        <p>
+            KX:<input id="kx" type="range" value=0 class="color form-control" style="width: 80px" min="-90" max="90"/>
+            KY:<input id="ky" type="range" value=0 class="color form-control" style="width: 80px" min="-90" max="90"/>
+        </p>
+
+    </form>
+    <p >外观<input type="button" class="color  btn btn-warning" value="delete" style="width: 70px;margin-left: 113px" id="remove_selected" ></p>
+    <form id="look-and-transform" disabled="disabled">
+        <p>
+            <span >填充:</span>
+            <input id="fill" type="color" value="#ffffff" class="color form-control" style="width: 50px"/>
+            <input type="button" value="透明" id="transparent" class="color form-control" style="width: 120px">
+        </p>
+        <p style="padding-bottom: 10px">
+            <span >描边:</span>
+            <input id="stroke" type="color" value="#ff0000" class="color form-control" style="width: 50px"/>
+            <input id="strokeWidth" type="range" value="1"   class="color form-control " style="width: 120px"/>
+        </p>
+
+    </form>
+</div>
+
+
+<div id="points">
+    <p>输入点:</p>
+    <textarea cols="21" rows="6" draggable="false" id="pArea" spellcheck="false" class="form-control"></textarea>
+</div>
+<div id="input">
+    <p>d语句:</p>
+    <textarea cols="21" rows="6" draggable="false" id="inputCode" spellcheck="false" class="form-control"></textarea>
+</div>
+<div id="code">
+    <p>输出svg代码:</p>
+    <textarea cols="21" rows="6" draggable="false" id="outputCode" spellcheck="false" class="form-control"></textarea>
+</div>
+
+<div id="edit_animate_button" class="btn btn-info">编辑动画 </div>
+<div id="edit_animate_div">
+    <label>输入 :</label><textarea id="edit_animate_textarea" rows="9" cols="54" style="vertical-align: middle"  spellcheck="false"></textarea>
+    <label>输出 :</label><textarea id="out_animate_textarea" rows="9" cols="46" style="vertical-align: middle" spellcheck="false"></textarea>
+</div>
+<div id="canvas">
+
+</div>
+</body>
+<script>
+    /**
+     * Created by durui on 2015/6/29.
+     */
+    var SVG_NS = 'http://www.w3.org/2000/svg';
+    var defaultAttrs = {
+        fill: '#ffffff',
+        stroke: '#ff0000'
+    };
+    var shapeInfo = {
+        rect: 'x:10,y:10,width:200,height:100,rx:0,ry:0',
+        circle: 'cx:200,cy:200,r:50',
+        ellipse: 'cx:200,cy:200,rx:80,ry:30',
+        line: 'x1:10,y1:10,x2:100,y2:100'
+    };
+    var selected=null
+    var createForm=document.getElementById("create-shape")
+    var attrForm=document.getElementById("shape-attrs")
+    var addAttrs=document.getElementById("add-attrs")
+    var lookForm=document.getElementById("look-and-transform")
+    var codeForm=document.getElementById("code-form")
+    var outputCode=document.getElementById("outputCode")
+
+
+    var svg=(function(){
+        var svg = document.createElementNS(SVG_NS, 'svg');
+        attr(svg,{
+            width:"100%",
+            height:"100%"
+        })
+        canvas.appendChild(svg)
+        return svg
+    })()
+    var mousePoints=[]
+
+    function jsonLength(json){
+        var i=0;
+        for(var key in json){
+            i++
+        }
+        return i
+    }
+    function getByText(t){
+        for(var i= 0,ele=document.getElementsByClassName("flag");i<ele.length;i++){
+            var text=ele[i].getElementsByTagName("text")[0]
+            if(text.textContent==t){
+                return ele[i]
+            }
+        }
+    }
+    function attr(){
+        var obj=arguments[0]
+        var json=arguments[1]
+        if(typeof json=="object" && !arguments[2]){
+            for(var key in json){
+                obj.setAttribute(key,json[key])
+            }
+            return true
+        }
+        if(typeof arguments[1]=="string" && arguments[2]){
+
+            obj.setAttribute(arguments[1],arguments[2])
+        }
+        if(typeof arguments[1]=="string" && !arguments[2]){
+            return obj.getAttribute(arguments[1])
+        }
+
+
+    }
+
+
+
+    function createPoints(x,y){
+        var g=document.createElementNS(SVG_NS,'g')
+        attr(g,{
+            transform:"translate("+x+","+y+")",
+            class:"flag",
+            fill:"transparent",
+            stroke:"rgb(236,151,31)"
+        })
+        var circle=document.createElementNS(SVG_NS,'circle')
+
+        attr(circle,{
+            cx:0,
+            cy:0,
+            r:8
+        })
+        var text=document.createElementNS(SVG_NS,'text')
+        text.textContent="p"+mousePoints.length
+        mousePoints.push("p"+mousePoints.length+":"+x+","+y)
+        pointsArea()
+        attr(text,{
+            x:0,
+            y:0,
+            dx:8,
+            dy:-8
+        })
+        g.appendChild(circle)
+        g.appendChild(text)
+        svg.appendChild(g)
+        return g
+    }
+
+
+
+    pArea.oninput=function(){
+        var info=this.value
+        var po=info.split("\n")
+        mousePoints=[]
+        var obj=svg.getElementsByClassName("flag")
+        var len=obj.length
+        for(var i= 0;i<len;i++){
+            svg.removeChild(obj[0])
+        }
+
+
+        for(var i=0;i<po.length;i++) {
+            if (po[i] != "" && /p\d{1,2}:\d+,\d+/.test(po[i])) {
+                mousePoints.push(po[i])
+            }
+        }
+        for(var i=0;i< mousePoints.length;i++){
+            createP(mousePoints[i])
+        }
+    }
+    function createP(info){
+        var p=info.match(/\w+:/)[0].replace(/:/,"")
+        var x=info.match(/:\d+/)[0].replace(/:/,"")
+        var y=info.match(/,\d+/)[0].replace(/,/,"")
+        var g=document.createElementNS(SVG_NS,'g')
+        attr(g,{
+            transform:"translate("+x+","+y+")",
+            class:"flag",
+            fill:"transparent",
+            stroke:"rgb(236,151,31)"
+        })
+        var circle=document.createElementNS(SVG_NS,'circle')
+        attr(circle,{
+            cx:0,
+            cy:0,
+            r:8
+        })
+        var text=document.createElementNS(SVG_NS,'text')
+        text.textContent=p
+        attr(text,{
+            x:0,
+            y:0,
+            dx:8,
+            dy:-8
+        })
+        g.appendChild(circle)
+        g.appendChild(text)
+        svg.appendChild(g)
+        dragUpdate(g)
+    }
+    function pointsArea(){
+        var str=""
+        for(var i=0;i<mousePoints.length;i++){
+            str+=mousePoints[i]+"\n"
+        }
+        pArea.value=str
+    }
+
+
+    function updatePoints(){
+        var str=""
+        pArea.value=""
+        mousePoints=[]
+        var ag=svg.getElementsByTagNameNS(SVG_NS,"g")
+        for(var i=0;i<ag.length;i++){
+            var pos="p"+i+":"+attr(ag[i],"transform").match(/[\d|,]+/g)[0]
+            mousePoints.push(pos)
+        }
+        pointsArea()
+    }
+
+
+    svg.addEventListener("click",function(e){
+        var handle= e.target
+        if(handle.tagName=="svg"){
+            var x= e.clientX-canvas.offsetLeft
+            var y= e.clientY-canvas.offsetTop
+            var g=createPoints(x,y)
+            dragUpdate(g)
+            hover(g)
+        }
+
+        if(handle.tagName!="svg"  && handle.parentNode.getAttribute("class")!="flag"){
+            console.log(e.target)
+            select(e.target)
+
+        }
+    })
+
+
+    function hover(g){
+        g.onmouseover=function(){
+            attr(this,{
+                stroke:'rgb(91,192,222)'
+            })
+        }
+        g.onmouseout=function(){
+            attr(this,{
+                stroke:"rgb(236,151,31)"
+            })
+        }
+    }
+
+
+
+    function dragUpdate(g){
+        var circle=g.getElementsByTagNameNS(SVG_NS,"circle")[0]
+
+        circle.onmousedown=function(e){
+            var dis=(function(circle){
+                var g=circle.parentNode
+                var pos= g.getAttribute("transform").replace(/[a-z|+(|)]/g,"").split(",")
+                return {
+                    x: e.clientX*1-(pos[0]*1+canvas.offsetLeft*1),
+                    y: e.clientY*1-(pos[1]*1+canvas.offsetTop*1)
+                }
+            })(circle)
+            document.onmousemove=function(e){
+                var str=( e.clientX-canvas.offsetLeft-dis.x)*1+","+ (e.clientY-canvas.offsetTop-dis.y)*1
+                attr(g, {
+                    transform:"translate("+str+")"
+                })
+                updatePoints()
+                runHandle()
+                produceCode()
+            }
+            document.onmouseup=function(){
+                this.onmousemove=null
+                this.onmouseup=null
+            }
+        }
+    }
+
+
+    var realShape={}
+    inputCode.oninput=function(e){
+        this.status=this.status || 0
+        var handle=inputCode.value
+        var nLen=handle.match(/\n/g)
+        var newStatus=nLen ? nLen.length : 0
+        if(newStatus!=this.status){
+            this.status=newStatus
+            runHandle()
+            produceCode()
+        }
+    }
+
+
+
+    function produceCode(){
+        var str=""
+        for(var i= 0,ele=svg.children;i<ele.length;i++){
+            if(ele[i].tagName!="g"){
+                var html=ele[i].outerHTML?ele[i].outerHTML:ele[i].nodeValue
+                str+=html.replace(/shape="[\w |,|]+"/g,"").replace(/color="[\w|,|\.|(|)]+"/,"")+"\n";
+            }
+        }
+        outputCode.value=str
+    }
+
+    function runHandle(){
+        var p=pArea.value;
+        var inform=str2json(p)
+        var c=inputCode.value
+        deletePath()
+
+        decode(c,inform)
+
+        function deletePath(){
+            var path=svg.getElementsByTagName("path")
+            var len=path.length
+            for(var i=0;i<len;i++){
+                svg.removeChild(path[0])
+            }
+        }
+
+        function decode(c,inform){
+            var realCode=[]
+            var realPath=[]
+            for(var i= 0,code=c.split("\n");i<code.length;i++){
+
+                if(code[i]){
+                    realCode.push(code[i].replace(/p\d{1,2}/g,function($0){
+                        return inform[$0]
+                    }))
+                    realPath.push(code[i])
+                }
+            }
+            var realCode=detect(realCode).rect().line().semi().arc().code()
+            for(var i=0;i<realCode.length;i++){
+                var path=document.createElementNS(SVG_NS,"path")
+                path.setAttribute("d",realCode[i].replace(/\w+/g,function($0){
+                    return $0.toUpperCase()
+                }))
+                realShape[realPath[i]]={
+                    fill:realShape[realPath[i]]?(realShape[realPath[i]].fill?realShape[realPath[i]].fill:'white') : "white",
+                    stroke:realShape[realPath[i]]?(realShape[realPath[i]].stroke?realShape[realPath[i]].stroke:'red') : "red",
+                    strokeWidth:realShape[realPath[i]]?(realShape[realPath[i]].strokeWidth?realShape[realPath[i]].strokeWidth:1) : 1,
+                    shape:realPath[i]
+                }
+                attr(path,{
+                    fill:realShape[realPath[i]].fill,
+                    stroke: realShape[realPath[i]].stroke,
+                    shape:realPath[i]
+                })
+
+                path.setAttribute("stroke-width", realShape[realPath[i]].strokeWidth)
+                selected=path
+
+                svg.appendChild(path)
+            }
+
+        }
+    }
+
+    function str2json(p){
+        var list= p.split("\n")
+        var json={}
+        for(var i=0;i<list.length;i++){
+            if(list[i]){
+                var pos=list[i].split(":")
+                var key=pos[0]
+                var value=pos[1]
+                json[key]=value
+            }
+        }
+        return json
+    }
+
+    createForm.addEventListener("click",function(e){
+        var n= e.target.tagName
+        if(e.target.tagName.toLowerCase()=="button"){
+            create(e.target.getAttribute("create"))
+            produceCode()
+        }
+    })
+
+
+    function select(shape){
+        if(shape.tagName=="path"){
+            selected=shape
+            return true
+        }
+        var attrs = shapeInfo[shape.tagName].split(",")
+        var attr, name, value
+
+        while (attrs.length) {
+            attr = attrs.shift().split(":")
+            name = attr[0]
+            value = shape.getAttribute(name) || attr[1]
+            shape.setAttribute(name, value)
+        }
+        for (var attr in defaultAttrs) {
+            value = shape.getAttribute(attr) || defaultAttrs[attr];
+            shape.setAttribute(attr, value)
+        }
+        selected=shape
+        update_add_form()
+    }
+    function update_add_form(){
+        var obj=addAttrs.getElementsByTagName('p');
+        for(var i=1;i<obj.length;i++){
+            var ele=obj[i].getElementsByTagName('input')
+            var key=ele[0].value
+            var value=ele[1]
+            value.value=selected?selected.getAttribute(key):""
+        }
+    }
+
+    function create(name){
+
+
+        var shape=document.createElementNS(SVG_NS,name)
+        attr(shape,{
+            color:"rgba(0,0,0,0.1)"
+
+        })
+        svg.appendChild(shape)
+        select(shape)
+    }
+
+    addAttrs.oninput=function(e){
+        var handle= e.target
+        if(handle.getAttribute('type')=="text") return
+        var p=handle.parentNode
+        var key= p.getElementsByTagName('input')[0].value
+        selected.setAttribute(key,handle.value)
+    }
+
+
+    attrForm.addEventListener("input",function(e){
+        if (e.target.tagName.toLowerCase() != 'input') return;
+        var action=e.target.id
+        var trans='translate(0 0) scale(1 1) rotate(0) skewX(0) skewY(0)';
+        var trans= selected.hasAttribute('transform')?selected.getAttribute('transform'):'translate(0 0) scale(1 1) rotate(0) skewX(0) skewY(0)';
+        var t=trans.match(/\w+\(([\d|\.]+) ([\d|\.]+)\) \w+\(([\d|\.]+) ([\d|\.]+)\) \w+\(([\d|\.]+)\) \w+\(([\d|\.|-]+)\) \w+\(([\d|\.|-]+)\)/)
+        console.log(action)
+        switch (action){
+            case 'tx':
+                var transform='translate('+tx.value+' '+t[2]+') scale('+t[3]+' '+t[4]+') rotate('+t[5]+') skewX('+t[6]+') rotate('+t[7]+')';
+                break
+            case 'ty':
+                var transform='translate('+t[1]+' '+ty.value+') scale('+t[3]+' '+t[4]+') rotate('+t[5]+') skewX('+t[6]+') rotate('+t[7]+')';
+
+                break
+            case 'sx':
+                var transform='translate('+t[1]+' '+t[2]+') scale('+sx.value+' '+t[4]+') rotate('+t[5]+') skewX('+t[6]+') rotate('+t[7]+')';
+                console.log(transform)
+
+                break
+            case 'sy':
+                var transform='translate('+t[1]+' '+t[2]+') scale('+t[3]+' '+sy.value+') rotate('+t[5]+') skewX('+t[6]+') skewY('+t[7]+')';
+                break
+            case 'rx':
+                var transform='translate('+t[1]+' '+t[2]+') scale('+t[3]+' '+t[4]+') rotate('+rx.value+') skewX('+t[6]+') skewY('+t[7]+')';
+                break
+            case 'kx':
+                var transform='translate('+t[1]+' '+t[2]+') scale('+t[3]+' '+t[4]+') rotate('+t[5]+') skewX('+kx.value+') skewY('+t[7]+')';
+                break
+            case 'ky':
+                var transform='translate('+t[1]+' '+t[2]+') scale('+t[3]+' '+t[4]+') rotate('+t[5]+') skewX('+t[6]+') skewY('+ky.value+')';
+                break
+            default :
+
+        }
+        produceCode()
+        selected.setAttribute('transform',transform)
+    })
+
+
+    add.onclick=function(){
+        var p=document.createElement('p')
+
+        var key=document.createElement("input")
+        key.type="text"
+        key.placeholder='key'
+        key.className='color form-control'
+        key.style.width='60px'
+        var span1=document.createElement("span")
+        span1.innerText='-> '
+        var value=document.createElement("input")
+        value.type='number'
+        value.className='color form-control'
+        value.style.width="90px"
+        var span2=document.createElement("span")
+        span2.innerText=' '
+        var del=document.createElement("input")
+        del.type='button'
+        del.className="color btn btn-warning"
+        del.value="del"
+        del.style.width="40px"
+
+        del.onclick=remove
+
+        p.appendChild(key)
+        p.appendChild(span1)
+        p.appendChild(value)
+        p.appendChild(span2)
+        p.appendChild(del)
+        addAttrs.appendChild(p)
+    }
+    remove_selected.onclick=function(){
+        svg.removeChild(selected)
+
+        produceCode()
+        update_add_form()
+        console.log(selected.tagName)
+        selected=null
+    }
+
+    function remove(){
+        var par=this.parentNode
+        addAttrs.removeChild(par)
+    }
+    width.onclick=remove
+    height.onclick=remove
+
+    lookForm.addEventListener("input",function(e){
+        var handle = e.target;
+        if (handle.tagName != "INPUT") return
+        var key = selected.getAttribute("shape")
+        var val=handle.id
+        if (selected.tagName == "path") {
+            realShape[key][val]=window[val].value
+            val=='strokeWidth'?selected.setAttribute('stroke-width',realShape[key][val]):selected.setAttribute(val,realShape[key][val])
+        } else {
+            val=='strokeWidth'?selected.setAttribute('stroke-width',window[val].value):selected.setAttribute(val,window[val].value)
+        }
+        produceCode()
+    })
+
+
+    transparent.onclick=function(){
+        selected.setAttribute('fill', "transparent")
+        produceCode()
+    }
+
+    var help_doc=document.getElementById('help-doc')
+    float_left.onclick=function(){
+        help_doc.style.left=0
+    }
+    float_right.onclick=function(){
+        help_doc.style.left='60%'
+    }
+    float_close.onclick=function(){
+        help_doc.style.display='none'
+    }
+    help.onclick=function(){
+        this.open=this.open?this.open:false
+        this.open?(help_doc.style.display='none'):( help_doc.style.display='block')
+        this.open=!this.open
+    }
+    edit_animate_button.onclick=function(){
+        this.open=this.open?this.open:false
+        this.open?(edit_animate_div.style.display='none'):( edit_animate_div.style.display='block')
+        this.open=!this.open
+
+    }
+
+
+    Array.prototype.trim=function(){
+        var arr=[]
+        this.forEach(function(name){
+            name && name!='\n' && arr.push(name.trim())
+        })
+        return arr
+    }
+    String.prototype.time=function(){
+        var arr =this.split(".")
+        if(arr.length==2){
+            return arr[0]*1000+("0."+parseInt(arr[1]))*1000
+        }else{
+            return parseInt(arr[0])*1000
+        }
+    }
+    String.prototype.upper=function(){
+        var re= this.replace(/[m|a|q|c|z|l]/g,function($0){
+            return $0.toUpperCase()
+        })
+        return re
+    }
+
+
+    var real_real_code
+    edit_animate_textarea.oninput=function(){
+        this.status=this.status || 0
+        var handle=edit_animate_textarea.value
+        var nLen=handle.match(/\n/g)
+        var newStatus=nLen ? nLen.length : 0
+        if(newStatus!=this.status){
+            this.status=newStatus
+            mousePoints.forEach(function(name){
+                var p=name.split(":")
+                window[p[0]]=[p[1].split(",")[0]*1,p[1].split(",")[1]*1]
+            })
+            real_real_code=inputCode.value.upper().split("\n").trim()
+
+            var allPath=document.getElementsByTagName("path")
+            real_real_code.forEach(function(name,index){
+                window['path'+index]=Path(allPath[index])
+                window['path'+index].d=name
+            })
+            var commands=run_animate_handle(handle)
+            output_ani_code(commands)
+        }
+    }
+
+    function output_ani_code(ani){
+        var str=''
+        mousePoints.forEach(function(name,id){
+            str+='var p'+id+' '+'='+' '+'['+window['p'+id]+']\n'
+        })
+        str+='var aPath=document.getElementsByTagName("path")\n'
+        var ph=document.getElementsByTagName('path').length
+        real_real_code.forEach(function(name,i){
+            str+='var path'+i+' '+'='+' '+'Path(aPath['+i+'])'+'\n'+'path'+i+'.d'+' '+'="'+name+'"'+'\n'
+        })
+        str+=ani
+        out_animate_textarea.value=str
+    }
+
+    function run_animate_handle(handle){
+        var commands=''
+        var order=handle.split("\n").trim()
+        order.forEach(function(name){
+            commands+=deorder(name)
+        })
+        return commands
+    }
+    function deorder(arr){
+        var commands=arr.replace(/:(p\d{1,2})/g,function($0,$1){
+            return ':['+window[$1]+']'
+        }).trim().split(" ").join(".")
+        eval(commands)
+        return commands+'\n'
+    }
+
+</script>
+</html>
