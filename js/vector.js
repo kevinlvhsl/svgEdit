@@ -1,7 +1,7 @@
 /**
  * Created by durui on 2015/6/29.
  */
-//Ê¸Á¿¼ÆËãÀà
+//ÃŠÂ¸ÃÂ¿Â¼Ã†Ã‹Ã£Ã€Ã  utf-8
 function Vector(l1,l2){
     return new V(l1,l2)
 }
